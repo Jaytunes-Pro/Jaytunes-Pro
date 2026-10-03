@@ -1,1 +1,67 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Jaytunes Pro V3</title><style>body{background:#0a0a0a;color:#fff;font-family:Arial;padding:15px;text-align:center}.card{background:#151515;border:1px solid #00ff88;border-radius:15px;padding:15px;margin:10px auto;max-width:400px}input{width:90%;padding:12px;margin:8px;border-radius:8px;border:none;background:#222;color:#fff}button{width:92%;padding:13px;margin:8px;background:#00ff88;color:#000;font-weight:bold;border:none;border-radius:8px;font-size:16px}.log{background:#000;height:200px;overflow-y:auto;text-align:left;padding:10px;font-size:12px;border-radius:8px;margin-top:10px}h2{color:#00ff88}</style></head><body><h2>JAYTUNES PRO V3</h2><div class="card"><p>Balance: <span id="balance">$0.00</span> | Profit: <span id="profit">$0.00</span></p><input id="token" type="password" placeholder="Paste your Deriv API Token here"><button onclick="login()">LOGIN & START</button><div style="display:flex;gap:5px"><input id="stake" value="0.35" placeholder="Stake"><select id="market" style="width:90%;padding:12px;margin:8px;border-radius:8px;background:#222;color:#fff"><option value="R_10">Vol 10</option><option value="R_25">Vol 25</option><option value="R_50">Vol 50</option><option value="R_75">Vol 75</option><option value="R_100">Vol 100</option></select></div><button onclick="startBot()" id="startBtn" style="background:#ffcc00">START BOT</button><button onclick="stopBot()" style="background:#ff4444;color:#fff">STOP BOT</button><div class="log" id="log">Waiting... App ID 34y1ruH3rUxo0zpjfX6p5 Connected</div></div><script>const APP_ID="34y1ruH3rUxo0zpjfX6p5";let ws,balance=0,profit=0,running=false;function l(msg){document.getElementById('log').innerHTML+=`<br>> ${msg}`;document.getElementById('log').scrollTop=9999}function login(){const t=document.getElementById('token').value.trim();if(!t){alert('Paste token');return}ws=new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);ws.onopen=()=>{l('Connected');ws.send(JSON.stringify({authorize:t}))};ws.onmessage=(e)=>{const d=JSON.parse(e.data);if(d.msg_type=='authorize'){balance=d.authorize.balance;l(`Logged in as ${d.authorize.email} | Balance $${balance}`);document.getElementById('balance').innerText=`$${balance}`;ws.send(JSON.stringify({balance:1,subscribe:1}))}if(d.msg_type=='balance'){balance=d.balance.balance;document.getElementById('balance').innerText=`$${balance.toFixed(2)}`}if(d.msg_type=='buy'){l(`Trade bought: ${d.buy.contract_id}`)}if(d.msg_type=='proposal_open_contract'){if(d.proposal_open_contract.is_sold){let p=parseFloat(d.proposal_open_contract.profit);profit+=p;document.getElementById('profit').innerText=`$${profit.toFixed(2)}`;l(`Result: ${p>0?'WIN +':'LOSS '}${p.toFixed(2)} Profit $${profit.toFixed(2)}`);if(running){setTimeout(trade,1000)}}}};ws.onerror=()=>l('Connection error');}function trade(){if(!running)return;let amt=parseFloat(document.getElementById('stake').value)||0.35;let m=document.getElementById('market').value;let type=Math.random()>0.5?'CALL':'PUT';l(`Buying ${type} on ${m} with $${amt}`);ws.send(JSON.stringify({buy:1,price:amt,parameters:{amount:amt,basis:'stake',contract_type:type,currency:'USD',duration:1,duration_unit:'t',symbol:m}}));}function startBot(){if(!ws){alert('Login first');return}running=true;document.getElementById('startBtn').innerText='RUNNING...';l('BOT STARTED');trade()}function stopBot(){running=false;document.getElementById('startBtn').innerText='START BOT';l('BOT STOPPED')}</script></body></html>
+<!DOCTYPE html>
+‎<html lang="en">
+‎<head>
+‎<meta charset="UTF-8">
+‎<meta name="viewport" content="width=device-width, initial-scale=1.0">
+‎<title>JaytuneMoney Pro</title>
+‎<style>
+‎*{margin:0;padding:0;box-sizing:border-box}
+‎body{background:#05070f;color:#fff;font-family:Arial}
+‎.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+‎.brain{font-size:90px;margin:15px}
+‎.title{font-size:28px;color:#ffd700;font-weight:700}
+‎.card{background:#121a30;border:1px solid #00ffcc;border-radius:18px;padding:18px;width:100%;max-width:380px;margin-top:15px}
+‎input{width:100%;padding:12px;background:#0a0e1f;border:1px solid #1e2d4a;border-radius:10px;color:#fff;margin:6px 0}
+‎.btn{width:100%;padding:13px;margin-top:10px;border:none;border-radius:10px;font-weight:700}
+‎.btn-login{background:#00ffcc;color:#000}
+‎.btn-trade{background:#ffd700;color:#000;display:none}
+‎.btn-trade.enabled{display:block}
+‎.status{margin-top:10px;padding:8px;background:#000;border-radius:8px;font-size:11px}
+‎.log{background:#000;border-radius:8px;margin-top:10px;padding:8px;height:120px;overflow-y:auto;font-size:10px}
+‎</style>
+‎</head>
+‎<body>
+‎<div class="hero">
+‎<div class="brain">🧠💰</div>
+‎<div class="title">JaytuneMoney Pro</div>
+‎<div class="card">
+‎<input id="pat" placeholder="Paste pat_ token here">
+‎<input id="appId" value="1089">
+‎<button class="btn btn-login" id="connectBtn" onclick="connectPAT()">CONNECT BRAIN</button>
+‎<button class="btn btn-trade" id="tradeBtn" onclick="startTrade()">START MONEY BOT</button>
+‎<div class="status" id="status">Waiting...</div>
+‎<div class="log" id="log"></div>
+‎</div>
+‎</div>
+‎<script>
+‎let ws=null,accountId=null;
+‎function log(m){let d=document.getElementById('log');d.innerHTML+='<div>'+m+'</div>';d.scrollTop=d.scrollHeight;}
+‎async function connectPAT(){
+‎let pat=document.getElementById('pat').value.trim();
+‎let appId=document.getElementById('appId').value.trim()||'1089';
+‎if(!pat.startsWith('pat_')){alert('Need pat_ token');return;}
+‎http://document.getElementById('connectBtn').innerText='Syncing...';
+‎try{
+‎let r=await fetch('https://api.derivws.com/trading/v1/options/accounts',{headers:{'Authorization':'Bearer '+pat,'Deriv-App-ID':appId}});
+‎let j=await http://r.json();
+‎if(!r.ok){log('FAIL '+JSON.stringify(j));return;}
+‎accountId=j.data.id;
+‎log('Account '+accountId);
+‎let r2=await fetch('https://api.derivws.com/trading/v1/options/accounts/'+accountId+'/otp',{method:'POST',headers:{'Authorization':'Bearer '+pat,'Deriv-App-ID':appId}});
+‎let j2=await http://r2.json();
+‎let wsUrl=j2.data.url;
+‎log('OTP OK');
+‎ws=new WebSocket(wsUrl);
+‎http://ws.onopen=()=>{log('CONNECTED LIVE');document.getElementById('status').innerText='CONNECTED LIVE';document.getElementById('tradeBtn').classList.add('enabled');};
+‎http://ws.onmessage=e=>log(e.data.substr(0,150));
+‎}catch(e){log(e.message);}
+‎}
+‎function startTrade(){
+‎if(!ws){log('Not connected');return;}
+‎let t={proposal:1,amount:1,basis:'stake',contract_type:'CALL',currency:'USD',duration:5,duration_unit:'t',underlying_symbol:'R_100'};
+‎http://ws.send(JSON.stringify(t));
+‎log('Trade sent');
+‎}
+‎</script>
+‎</body>
+‎</html>[0]
